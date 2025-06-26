@@ -11,17 +11,19 @@
     </style>
 </head>
 <body>
-    <h1 class="mb-4">团队KPI管理与问题跟踪</h1>
+    <!-- 语言切换按钮 -->
+    <button id="langToggle" class="btn btn-secondary mb-3">English</button>
+    <h1 class="mb-4" id="mainTitle">团队KPI管理与问题跟踪</h1>
     <!-- 问题点跟踪统计 -->
-    <h2>问题点跟踪统计</h2>
+    <h2 id="issueTitle">问题点跟踪统计</h2>
     <table class="table table-bordered align-middle" id="issueTable">
         <thead class="table-dark">
             <tr>
                 <th>#</th>
-                <th>问题描述</th>
-                <th>责任人</th>
-                <th>状态</th>
-                <th>进度</th>
+                <th id="issueDescTh">问题描述</th>
+                <th id="issueOwnerTh">责任人</th>
+                <th id="issueStatusTh">状态</th>
+                <th id="issueProgressTh">进度</th>
             </tr>
         </thead>
         <tbody>
@@ -48,23 +50,25 @@
             </tr>
         </tbody>
     </table>
-    <p>当前问题总数：<span id="issueCount"></span></p>
+    <p id="issueCountLabel">当前问题总数：<span id="issueCount"></span></p>
 
     <!-- KPI及关键措施 -->
-    <h2 class="mt-5">KPI及关键措施</h2>
+    <h2 class="mt-5" id="kpiTitle">KPI及关键措施</h2>
     <div id="kpiList"></div>
-    <button class="btn btn-primary mt-2" onclick="addKPI()">添加KPI</button>
+    <button class="btn btn-primary mt-2" onclick="addKPI()" id="addKpiBtn">添加KPI</button>
+    <button class="btn btn-outline-success mt-2" onclick="saveWeek()" id="saveBtn">保存本周内容</button>
+    <button class="btn btn-outline-info mt-2" onclick="reviewWeeks()" id="reviewBtn">回顾历史内容</button>
 
     <!-- 人员完成度排名 -->
-    <h2 class="mt-5">人员完成度排名</h2>
+    <h2 class="mt-5" id="rankTitle">人员完成度排名</h2>
     <table class="table table-striped rank-table" id="rankTable">
         <thead class="table-dark">
             <tr>
-                <th>排名</th>
-                <th>姓名</th>
-                <th>完成任务数</th>
-                <th>总任务数</th>
-                <th>完成率</th>
+                <th id="rankTh">排名</th>
+                <th id="nameTh">姓名</th>
+                <th id="finishedTh">完成任务数</th>
+                <th id="totalTh">总任务数</th>
+                <th id="rateTh">完成率</th>
             </tr>
         </thead>
         <tbody>
@@ -73,6 +77,62 @@
     </table>
 
     <script>
+        // 多语言字典
+        const langText = {
+            'zh': {
+                mainTitle: "团队KPI管理与问题跟踪",
+                issueTitle: "问题点跟踪统计",
+                kpiTitle: "KPI及关键措施",
+                addKPI: "添加KPI",
+                save: "保存本周内容",
+                review: "回顾历史内容",
+                addMeasure: "添加措施",
+                delete: "删除",
+                input: "新增关键措施，每行一个",
+                prompt: "请输入新KPI名称：",
+                issueDesc: "问题描述",
+                issueOwner: "责任人",
+                issueStatus: "状态",
+                issueProgress: "进度",
+                issueCount: "当前问题总数：",
+                rankTitle: "人员完成度排名",
+                rank: "排名",
+                name: "姓名",
+                finished: "完成任务数",
+                total: "总任务数",
+                rate: "完成率",
+                saveSuccess: "保存成功！",
+                noHistory: "暂无历史内容"
+            },
+            'en': {
+                mainTitle: "Team KPI Management & Issue Tracking",
+                issueTitle: "Issue Tracking",
+                kpiTitle: "KPI & Key Actions",
+                addKPI: "Add KPI",
+                save: "Save This Week",
+                review: "Review History",
+                addMeasure: "Add Action",
+                delete: "Delete",
+                input: "Add key actions, one per line",
+                prompt: "Enter new KPI name:",
+                issueDesc: "Issue",
+                issueOwner: "Owner",
+                issueStatus: "Status",
+                issueProgress: "Progress",
+                issueCount: "Total Issues:",
+                rankTitle: "Ranking",
+                rank: "Rank",
+                name: "Name",
+                finished: "Finished Tasks",
+                total: "Total Tasks",
+                rate: "Finish Rate",
+                saveSuccess: "Saved!",
+                noHistory: "No history yet"
+            }
+        };
+
+        let isEn = false;
+
         // 问题统计
         document.getElementById('issueCount').innerText = document.querySelectorAll('#issueTable tbody tr').length;
 
@@ -91,12 +151,12 @@
                     <strong>KPI: ${kpi.name}</strong>
                     <ul class="mb-2">`;
                 kpi.measures.forEach((msr, i) => {
-                    html += `<li>${msr} <button class="btn btn-sm btn-danger" onclick="removeMeasure(${idx},${i})">删除</button></li>`;
+                    html += `<li>${msr} <button class="btn btn-sm btn-danger" onclick="removeMeasure(${idx},${i})">${isEn ? langText.en.delete : langText.zh.delete}</button></li>`;
                 });
                 html += `</ul>
                     <div class="input-group mb-1" style="max-width:400px;">
-                        <input class="form-control" id="input-${idx}" placeholder="新增关键措施">
-                        <button class="btn btn-success" onclick="addMeasure(${idx})">添加措施</button>
+                        <textarea class="form-control" id="input-${idx}" rows="3" placeholder="${isEn ? langText.en.input : langText.zh.input}"></textarea>
+                        <button class="btn btn-success" onclick="addMeasure(${idx})">${isEn ? langText.en.addMeasure : langText.zh.addMeasure}</button>
                     </div>
                 </div>`;
                 kpiList.innerHTML += html;
@@ -105,8 +165,9 @@
 
         function addMeasure(idx) {
             const input = document.getElementById(`input-${idx}`);
-            if (input.value.trim()) {
-                kpis[idx].measures.push(input.value.trim());
+            const lines = input.value.split('\n').map(s => s.trim()).filter(Boolean);
+            if (lines.length) {
+                kpis[idx].measures.push(...lines);
                 input.value = '';
                 renderKPIs();
             }
@@ -118,7 +179,7 @@
         }
 
         function addKPI() {
-            const newName = prompt("请输入新KPI名称：");
+            const newName = prompt(isEn ? langText.en.prompt : langText.zh.prompt);
             if (newName && newName.trim()) {
                 kpis.push({ name: newName.trim(), measures: [] });
                 renderKPIs();
@@ -126,6 +187,49 @@
         }
 
         renderKPIs();
+
+        // 多语言切换
+        document.getElementById('langToggle').onclick = function() {
+            isEn = !isEn;
+            this.textContent = isEn ? '中文' : 'English';
+            document.getElementById('mainTitle').textContent = isEn ? langText.en.mainTitle : langText.zh.mainTitle;
+            document.getElementById('issueTitle').textContent = isEn ? langText.en.issueTitle : langText.zh.issueTitle;
+            document.getElementById('kpiTitle').textContent = isEn ? langText.en.kpiTitle : langText.zh.kpiTitle;
+            document.getElementById('addKpiBtn').textContent = isEn ? langText.en.addKPI : langText.zh.addKPI;
+            document.getElementById('saveBtn').textContent = isEn ? langText.en.save : langText.zh.save;
+            document.getElementById('reviewBtn').textContent = isEn ? langText.en.review : langText.zh.review;
+            document.getElementById('issueDescTh').textContent = isEn ? langText.en.issueDesc : langText.zh.issueDesc;
+            document.getElementById('issueOwnerTh').textContent = isEn ? langText.en.issueOwner : langText.zh.issueOwner;
+            document.getElementById('issueStatusTh').textContent = isEn ? langText.en.issueStatus : langText.zh.issueStatus;
+            document.getElementById('issueProgressTh').textContent = isEn ? langText.en.issueProgress : langText.zh.issueProgress;
+            document.getElementById('issueCountLabel').childNodes[0].textContent = isEn ? langText.en.issueCount : langText.zh.issueCount;
+            document.getElementById('rankTitle').textContent = isEn ? langText.en.rankTitle : langText.zh.rankTitle;
+            document.getElementById('rankTh').textContent = isEn ? langText.en.rank : langText.zh.rank;
+            document.getElementById('nameTh').textContent = isEn ? langText.en.name : langText.zh.name;
+            document.getElementById('finishedTh').textContent = isEn ? langText.en.finished : langText.zh.finished;
+            document.getElementById('totalTh').textContent = isEn ? langText.en.total : langText.zh.total;
+            document.getElementById('rateTh').textContent = isEn ? langText.en.rate : langText.zh.rate;
+            renderKPIs();
+        };
+
+        // 每周内容保存与回顾
+        function saveWeek() {
+            const weeks = JSON.parse(localStorage.getItem('weeks') || '[]');
+            weeks.push({
+                date: new Date().toLocaleDateString(),
+                kpis: JSON.parse(JSON.stringify(kpis))
+            });
+            localStorage.setItem('weeks', JSON.stringify(weeks));
+            alert(isEn ? langText.en.saveSuccess : langText.zh.saveSuccess);
+        }
+        function reviewWeeks() {
+            const weeks = JSON.parse(localStorage.getItem('weeks') || '[]');
+            let msg = weeks.map((w,i) =>
+                `[${i+1}] ${w.date}\n` +
+                w.kpis.map(k=>`KPI: ${k.name}\n${k.measures.map(m=>'- '+m).join('\n')}`).join('\n')
+            ).join('\n\n');
+            alert(msg || (isEn ? langText.en.noHistory : langText.zh.noHistory));
+        }
 
         // 人员完成度数据
         const memberData = [
