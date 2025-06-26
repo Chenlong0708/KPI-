@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>KPI 跟踪器</title>
+  <title>KPI Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -48,13 +48,12 @@
       cursor: pointer;
     }
     .kpi-group { background: #eaf2ff; font-weight: bold; }
-    .lang-switcher, .week-selector { margin-bottom: 15px; display: flex; align-items: center; }
-    .chart-container { margin-top: 30px; }
+    .lang-switcher, .week-selector { margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
-<h1 id="title">KPI 跟踪器</h1>
+<h1 id="title">KPI Tracker</h1>
 
 <div class="lang-switcher">
   <label>🌐 Language:
@@ -67,50 +66,113 @@
 </div>
 
 <div class="week-selector">
-  <label id="weekLabel">选择周:
+  <label id="weekLabel">Select Week:
     <input type="week" id="weekInput" onchange="loadWeekData()">
   </label>
-  <button onclick="addKpiGroup()" style="margin-left:auto;">➕ 添加KPI</button>
 </div>
 
-<h2 id="kpiTitle">KPI 与关键行动</h2>
+<h2 id="kpiTitle">KPI and Actions</h2>
 
 <table id="kpiTable">
-  <!-- 表格内容 -->
+  <thead>
+    <tr>
+      <th id="kpiTh">Core KPI</th>
+      <th id="actionTh">Key Action</th>
+      <th id="reviewTh">Review</th>
+      <th id="planTh">Plan</th>
+      <th id="ownerTh">Owner</th>
+      <th>+</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="kpi-group">
+      <td colspan="6">Customer Satisfaction ≥ 90% <button onclick="addActionRow(this)">Add Action</button></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><input></td>
+      <td><textarea></textarea></td>
+      <td><textarea></textarea></td>
+      <td><input></td>
+      <td><button onclick="removeRow(this)">×</button></td>
+    </tr>
+  </tbody>
 </table>
 
-<button onclick="saveWeekData()">💾 保存本周数据</button>
-
-<!-- 示例：添加一个用于展示图表的容器 -->
-<div class="chart-container">
-  <canvas id="kpichart" width="400" height="200"></canvas>
-</div>
+<button onclick="addKpiGroup()">➕ Add KPI</button>
+<button onclick="saveWeekData()">💾 Save Week Data</button>
 
 <script>
-// 原有的脚本部分保持不变...
-// 注意在页面加载时初始化或生成默认的图表
-window.onload = function() {
-  // 示例：创建一个简单的柱状图
-  var ctx = document.getElementById('kpichart').getContext('2d');
-  var chart = new Chart(ctx, {
-    type: 'bar', // 或者使用其他类型如 'line', 'pie' 等
-    data: {
-      labels: ['满意度'], // 示例数据标签
-      datasets: [{
-        label: '客户满意度',
-        data: [90], // 示例数据
-        backgroundColor: '#1a6dcc'
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
+let translations = {
+  en: { title: "KPI Tracker", kpiTitle: "KPI and Actions", kpiTh: "Core KPI", actionTh: "Key Action", reviewTh: "Review", planTh: "Plan", ownerTh: "Owner", weekLabel: "Select Week:" },
+  zh: { title: "KPI 跟踪器", kpiTitle: "KPI 与关键行动", kpiTh: "核心KPI", actionTh: "关键行动", reviewTh: "本周回顾", planTh: "下周计划", ownerTh: "责任人", weekLabel: "选择周:" },
+  es: { title: "Seguimiento KPI", kpiTitle: "KPI y Acciones", kpiTh: "KPI Central", actionTh: "Acción Clave", reviewTh: "Revisión", planTh: "Plan", ownerTh: "Responsable", weekLabel: "Semana:" }
 };
+
+function changeLang(lang) {
+  const t = translations[lang];
+  for (let key in t) document.getElementById(key).innerText = t[key];
+}
+
+function addActionRow(button) {
+  const groupRow = button.closest("tr");
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td></td>
+    <td><input></td>
+    <td><textarea></textarea></td>
+    <td><textarea></textarea></td>
+    <td><input></td>
+    <td><button onclick="removeRow(this)">×</button></td>`;
+  groupRow.parentNode.insertBefore(newRow, groupRow.nextSibling);
+}
+
+function removeRow(btn) {
+  btn.closest("tr").remove();
+}
+
+function addKpiGroup() {
+  const tbody = document.getElementById("kpiTable").querySelector("tbody");
+  const kpiRow = document.createElement("tr");
+  kpiRow.classList.add("kpi-group");
+  kpiRow.innerHTML = `<td colspan="6"><input placeholder="New KPI"> <button onclick="addActionRow(this)">Add Action</button></td>`;
+  tbody.appendChild(kpiRow);
+  const actionRow = document.createElement("tr");
+  actionRow.innerHTML = `
+    <td></td>
+    <td><input></td>
+    <td><textarea></textarea></td>
+    <td><textarea></textarea></td>
+    <td><input></td>
+    <td><button onclick="removeRow(this)">×</button></td>`;
+  tbody.appendChild(actionRow);
+}
+
+function saveWeekData() {
+  const week = document.getElementById("weekInput").value;
+  if (!week) return alert("Please select a week.");
+  const rows = [...document.getElementById("kpiTable").querySelector("tbody").rows];
+  const data = rows.map(r => [...r.cells].map(c => c.querySelector("input,textarea")?.value || c.innerText || ""));
+  localStorage.setItem("kpi_" + week, JSON.stringify(data));
+  alert("Week data saved!");
+}
+
+function loadWeekData() {
+  const week = document.getElementById("weekInput").value;
+  const saved = localStorage.getItem("kpi_" + week);
+  if (!saved) return;
+  const tbody = document.getElementById("kpiTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  const rows = JSON.parse(saved);
+  rows.forEach(cells => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = cells.map((txt, i) => {
+      if (i === 0 && txt.includes("KPI")) return `<td colspan="6" class="kpi-group">${txt} <button onclick="addActionRow(this)">Add Action</button></td>`;
+      return `<td>${i === 1 || i === 4 ? `<input value="${txt}">` : i === 2 || i === 3 ? `<textarea>${txt}</textarea>` : txt}</td>`;
+    }).join("");
+    tbody.appendChild(tr);
+  });
+}
 </script>
 
 </body>
