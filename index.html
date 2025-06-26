@@ -1,179 +1,124 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>团队KPI与问题追踪</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: "Microsoft YaHei", sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f4f6f9;
-            color: #333;
-        }
-        h1, h2 {
-            color: #1a6dcc;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        th, td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #1a6dcc;
-            color: white;
-        }
-        textarea, input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            resize: vertical;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #1a6dcc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #155db3;
-        }
-        canvas {
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Daily Issue Tracker - 麦肯锡风格</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 32px 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.2em;
+      color: #23395d;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    .date {
+      text-align: right;
+      color: #888;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1em;
+      margin-bottom: 24px;
+    }
+    th, td {
+      border: 1px solid #dde2e8;
+      padding: 12px 8px;
+      text-align: left;
+    }
+    th {
+      background: #eaf0f7;
+      color: #23395d;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #f7fafd;
+    }
+    .add-issue {
+      background: #23395d;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      float: right;
+      margin-bottom: 18px;
+      transition: background 0.2s;
+    }
+    .add-issue:hover {
+      background: #43689b;
+    }
+    .clear {
+      clear: both;
+    }
+    .footer {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9em;
+      margin-top: 30px;
+    }
+  </style>
 </head>
 <body>
-
-<h1>团队KPI与问题追踪</h1>
-
-<h2>KPI 目标与进展</h2>
-<table id="kpi-table">
-    <thead>
+  <div class="container">
+    <h1>Daily Issue Tracker</h1>
+    <div class="date" id="today"></div>
+    <button class="add-issue" onclick="addRow()">添加问题</button>
+    <div class="clear"></div>
+    <table id="issueTable">
+      <thead>
         <tr>
-            <th>核心KPI</th>
-            <th>关键行动</th>
-            <th>本周回顾</th>
-            <th>下周计划</th>
-            <th>责任人</th>
+          <th>序号</th>
+          <th>问题描述</th>
+          <th>责任人</th>
+          <th>优先级</th>
+          <th>状态</th>
+          <th>解决方案/备注</th>
         </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><input placeholder="如 客户满意度 ≥ 90%"></td>
-            <td><input placeholder="如 提升响应速度"></td>
-            <td><textarea></textarea></td>
-            <td><textarea></textarea></td>
-            <td><input placeholder="如 张明"></td>
-        </tr>
-    </tbody>
-</table>
-<button onclick="addRow('kpi-table')">➕ 添加KPI</button>
+      </thead>
+      <tbody>
+        <!-- 动态插入行 -->
+      </tbody>
+    </table>
+    <div class="footer">
+      麦肯锡风格 · 团队日常问题追踪
+    </div>
+  </div>
+  <script>
+    // 显示今日日期
+    document.getElementById('today').innerText = '日期: ' + new Date().toLocaleDateString();
 
-<h2>问题清单追踪</h2>
-<table id="issue-table">
-    <thead>
-        <tr>
-            <th>问题描述</th>
-            <th>负责人</th>
-            <th>状态</th>
-            <th>预计完成时间</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><textarea></textarea></td>
-            <td><input></td>
-            <td><select>
-                <option>待处理</option>
-                <option>处理中</option>
-                <option>已完成</option>
-            </select></td>
-            <td><input type="date"></td>
-        </tr>
-    </tbody>
-</table>
-<button onclick="addRow('issue-table')">➕ 添加问题</button>
-
-<h2>责任人完成情况统计图</h2>
-<canvas id="progressChart" width="600" height="300"></canvas>
-
-<script>
-function addRow(tableId) {
-    const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-    const row = table.rows[0].cloneNode(true);
-    row.querySelectorAll('input, textarea').forEach(el => el.value = "");
-    row.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
-    table.appendChild(row);
-}
-
-function updateChart() {
-    const rows = document.getElementById('issue-table').getElementsByTagName('tbody')[0].rows;
-    const counts = {};
-    for (let row of rows) {
-        const name = row.cells[1].querySelector('input').value.trim();
-        const status = row.cells[2].querySelector('select').value;
-        if (!name) continue;
-        if (!counts[name]) counts[name] = { total: 0, done: 0 };
-        counts[name].total++;
-        if (status === '已完成') counts[name].done++;
-    }
-
-    const labels = Object.keys(counts);
-    const data = labels.map(name => {
-        const c = counts[name];
-        return Math.round((c.done / c.total) * 100);
-    });
-
-    progressChart.data.labels = labels;
-    progressChart.data.datasets[0].data = data;
-    progressChart.update();
-}
-
-const ctx = document.getElementById('progressChart').getContext('2d');
-const progressChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: [],
-        datasets: [{
-            label: '完成率 (%)',
-            data: [],
-            backgroundColor: '#2c87e6'
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                    callback: value => value + '%'
-                }
-            }
+    // 添加新行
+    function addRow() {
+      const table = document.getElementById('issueTable').getElementsByTagName('tbody')[0];
+      const rowCount = table.rows.length;
+      const row = table.insertRow();
+      for(let i = 0; i < 6; i++) {
+        let cell = row.insertCell(i);
+        if(i === 0) {
+          cell.innerText = rowCount + 1;
+        } else {
+          cell.contentEditable = "true";
+          cell.style.background = "#fffbe4";
         }
+      }
     }
-});
-
-// 自动统计图更新（每5秒）
-setInterval(updateChart, 5000);
-</script>
-
+  </script>
 </body>
 </html>
