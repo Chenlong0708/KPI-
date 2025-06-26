@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Daily Issue Tracker - 麦肯锡风格</title>
+  <title>Daily Issue Tracker - McKinsey Style</title>
   <style>
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
@@ -73,38 +73,50 @@
       font-size: 0.9em;
       margin-top: 30px;
     }
+    #closeRateChart {
+      max-width: 600px;
+      margin: 20px auto 0 auto;
+      display: block;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px;
+    }
   </style>
+  <!-- 引入 Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Daily Issue Tracker</h1>
     <div class="date" id="today"></div>
-    <button class="add-issue" onclick="addRow()">添加问题</button>
+    <button class="add-issue" onclick="addRow()">Add Issue</button>
     <div class="clear"></div>
     <table id="issueTable">
       <thead>
         <tr>
-          <th>序号</th>
-          <th>问题描述</th>
-          <th>责任人</th>
-          <th>优先级</th>
-          <th>状态</th>
-          <th>解决方案/备注</th>
+          <th>No.</th>
+          <th>Description</th>
+          <th>Owner</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Solution/Remarks</th>
         </tr>
       </thead>
       <tbody>
-        <!-- 动态插入行 -->
+        <!-- Rows will be inserted dynamically -->
       </tbody>
     </table>
+    <canvas id="closeRateChart"></canvas>
     <div class="footer">
-      麦肯锡风格 · 团队日常问题追踪
+      McKinsey Style · Team Daily Issue Tracker
     </div>
   </div>
   <script>
-    // 显示今日日期
-    document.getElementById('today').innerText = '日期: ' + new Date().toLocaleDateString();
+    // Show today's date
+    document.getElementById('today').innerText = 'Date: ' + new Date().toLocaleDateString();
 
-    // 添加新行
+    // Add new row
     function addRow() {
       const table = document.getElementById('issueTable').getElementsByTagName('tbody')[0];
       const rowCount = table.rows.length;
@@ -118,7 +130,66 @@
           cell.style.background = "#fffbe4";
         }
       }
+      updateCloseRateChart();
     }
+
+    // Listen for table changes to update the ranking
+    document.getElementById('issueTable').addEventListener('input', updateCloseRateChart);
+    document.getElementById('issueTable').addEventListener('blur', updateCloseRateChart, true);
+
+    // Calculate and draw the close rate ranking
+    function updateCloseRateChart() {
+      const table = document.getElementById('issueTable').getElementsByTagName('tbody')[0];
+      const ownerStats = {};
+      for(let i = 0; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const owner = row.cells[2].innerText.trim();
+        const status = row.cells[4].innerText.trim().toLowerCase();
+        if(owner) {
+          if(!ownerStats[owner]) ownerStats[owner] = {total: 0, closed: 0};
+          ownerStats[owner].total += 1;
+          if(status === "closed" || status === "已关闭" || status === "done" || status === "完成") {
+            ownerStats[owner].closed += 1;
+          }
+        }
+      }
+      // Prepare data for Chart.js
+      const owners = Object.keys(ownerStats);
+      const rates = owners.map(o => ownerStats[o].total > 0 ? (ownerStats[o].closed / ownerStats[o].total * 100).toFixed(1) : 0);
+      // Sort ranking
+      const sorted = owners.map((o,i)=>({owner:o,rate:parseFloat(rates[i])}))
+        .sort((a,b)=>b.rate-a.rate);
+      // Draw chart
+      const ctx = document.getElementById('closeRateChart').getContext('2d');
+      if(window.closeRateChartInstance) window.closeRateChartInstance.destroy();
+      window.closeRateChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(x=>x.owner),
+          datasets: [{
+            label: 'Close Rate (%)',
+            data: sorted.map(x=>x.rate),
+            backgroundColor: '#43689b'
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: { beginAtZero: true, max: 100 }
+          },
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: "Owner Close Rate Ranking"
+            }
+          }
+        }
+      });
+    }
+
+    // Initial draw
+    updateCloseRateChart();
   </script>
 </body>
 </html>
