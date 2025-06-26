@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>团队KPI与问题追踪</title>
+    <title>Team KPI & Issue Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -62,39 +61,39 @@
 </head>
 <body>
 
-<h1>团队KPI与问题追踪</h1>
+<h1>Team KPI & Issue Tracker</h1>
 
-<h2>KPI 目标与进展</h2>
+<h2>KPI Goals & Progress</h2>
 <table id="kpi-table">
     <thead>
         <tr>
-            <th>核心KPI</th>
-            <th>关键行动</th>
-            <th>本周回顾</th>
-            <th>下周计划</th>
-            <th>责任人</th>
+            <th>Core KPI</th>
+            <th>Key Actions</th>
+            <th>This Week Review</th>
+            <th>Next Week Plan</th>
+            <th>Owner</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td><input placeholder="如 客户满意度 ≥ 90%"></td>
-            <td><input placeholder="如 提升响应速度"></td>
+            <td><input placeholder="e.g. Customer satisfaction ≥ 90%"></td>
+            <td><input placeholder="e.g. Improve response time"></td>
             <td><textarea></textarea></td>
             <td><textarea></textarea></td>
-            <td><input placeholder="如 张明"></td>
+            <td><input placeholder="e.g. Jack Zhang"></td>
         </tr>
     </tbody>
 </table>
-<button onclick="addRow('kpi-table')">➕ 添加KPI</button>
+<button onclick="addRow('kpi-table')">➕ Add KPI</button>
 
-<h2>问题清单追踪</h2>
+<h2>Issue Tracking List</h2>
 <table id="issue-table">
     <thead>
         <tr>
-            <th>问题描述</th>
-            <th>负责人</th>
-            <th>状态</th>
-            <th>预计完成时间</th>
+            <th>Issue Description</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Estimated Completion</th>
         </tr>
     </thead>
     <tbody>
@@ -102,17 +101,17 @@
             <td><textarea></textarea></td>
             <td><input></td>
             <td><select>
-                <option>待处理</option>
-                <option>处理中</option>
-                <option>已完成</option>
+                <option>To Do</option>
+                <option>In Progress</option>
+                <option>Done</option>
             </select></td>
             <td><input type="date"></td>
         </tr>
     </tbody>
 </table>
-<button onclick="addRow('issue-table')">➕ 添加问题</button>
+<button onclick="addRow('issue-table')">➕ Add Issue</button>
 
-<h2>责任人完成情况统计图</h2>
+<h2>Owner Completion Rate Chart</h2>
 <canvas id="progressChart" width="600" height="300"></canvas>
 
 <script>
@@ -133,7 +132,7 @@ function updateChart() {
         if (!name) continue;
         if (!counts[name]) counts[name] = { total: 0, done: 0 };
         counts[name].total++;
-        if (status === '已完成') counts[name].done++;
+        if (status === 'Done') counts[name].done++;
     }
 
     const labels = Object.keys(counts);
@@ -153,7 +152,7 @@ const progressChart = new Chart(ctx, {
     data: {
         labels: [],
         datasets: [{
-            label: '完成率 (%)',
+            label: 'Completion Rate (%)',
             data: [],
             backgroundColor: '#2c87e6'
         }]
@@ -171,7 +170,7 @@ const progressChart = new Chart(ctx, {
     }
 });
 
-// 自动统计图更新（每5秒）
+// Auto update chart every 5 seconds
 setInterval(updateChart, 5000);
 </script>
 
