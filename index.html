@@ -121,6 +121,7 @@ function addRow(tableId) {
     row.querySelectorAll('input, textarea').forEach(el => el.value = "");
     row.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
     table.appendChild(row);
+    triggerSync(tableId); // 新增行后也同步
 }
 
 function updateChart() {
@@ -173,6 +174,83 @@ const progressChart = new Chart(ctx, {
 // Auto update chart every 5 seconds
 setInterval(updateChart, 5000);
 </script>
+
+<!-- 多人协作实时编辑核心功能开始 -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+// 请将下行地址替换为你的 Socket.io 服务器地址
+const socket = io('http://你的服务器IP:端口');
+
+function getTableData(tableId) {
+    const table = document.getElementById(tableId);
+    const data = [];
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const rowData = [];
+        row.querySelectorAll('input, textarea, select').forEach(el => {
+            rowData.push(el.value);
+        });
+        data.push(rowData);
+    });
+    return data;
+}
+
+function setTableData(tableId, data) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    // 清空
+    while (tbody.rows.length > 0) {
+        tbody.deleteRow(0);
+    }
+    // 按新数据补充
+    data.forEach(rowData => {
+        const tr = table.rows[1] ? table.rows[1].cloneNode(true) : table.rows[0].cloneNode(true);
+        tr.querySelectorAll('input, textarea, select').forEach((el, idx) => {
+            el.value = rowData[idx] || "";
+        });
+        tbody.appendChild(tr);
+    });
+    // 若无数据，补一行空的
+    if (data.length === 0 && table.rows[0]) {
+        const tr = table.rows[0].cloneNode(true);
+        tr.querySelectorAll('input, textarea, select').forEach(el => el.value = "");
+        tbody.appendChild(tr);
+    }
+    updateChart();
+}
+
+function triggerSync(tableId) {
+    const data = getTableData(tableId);
+    socket.emit('table-update', { tableId, data });
+}
+
+// 监听输入和结构变更
+['kpi-table', 'issue-table'].forEach(tableId => {
+    document.getElementById(tableId).addEventListener('input', () => triggerSync(tableId));
+});
+
+// 监听按钮新增行
+document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setTimeout(() => {
+            ['kpi-table', 'issue-table'].forEach(tableId => triggerSync(tableId));
+        }, 10);
+    });
+});
+
+// 接收并更新
+socket.on('table-update', ({ tableId, data }) => {
+    setTableData(tableId, data);
+});
+
+// 新连接立即获取最新内容
+socket.on('connect', () => {
+    socket.emit('get-initial');
+});
+socket.on('initial-data', (tables) => {
+    Object.keys(tables).forEach(tableId => setTableData(tableId, tables[tableId]));
+});
+</script>
+<!-- 多人协作实时编辑核心功能结束 -->
 
 </body>
 </html>
