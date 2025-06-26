@@ -50,6 +50,11 @@
     </table>
     <p>当前问题总数：<span id="issueCount"></span></p>
 
+    <!-- KPI及关键措施 -->
+    <h2 class="mt-5">KPI及关键措施</h2>
+    <div id="kpiList"></div>
+    <button class="btn btn-primary mt-2" onclick="addKPI()">添加KPI</button>
+
     <!-- 人员完成度排名 -->
     <h2 class="mt-5">人员完成度排名</h2>
     <table class="table table-striped rank-table" id="rankTable">
@@ -59,7 +64,7 @@
                 <th>姓名</th>
                 <th>完成任务数</th>
                 <th>总任务数</th>
-                <th>完成度</th>
+                <th>完成率</th>
             </tr>
         </thead>
         <tbody>
@@ -68,17 +73,68 @@
     </table>
 
     <script>
-        // 1. 问题统计
+        // 问题统计
         document.getElementById('issueCount').innerText = document.querySelectorAll('#issueTable tbody tr').length;
 
-        // 2. 人员完成度数据（可根据实际情况扩充）
+        // KPI及关键措施数据
+        let kpis = [
+            { name: "代码规范执行", measures: ["定期代码评审", "自动化检查"] },
+            { name: "交付准时率", measures: ["制定详细计划"] }
+        ];
+
+        // 渲染KPI及关键措施
+        function renderKPIs() {
+            const kpiList = document.getElementById('kpiList');
+            kpiList.innerHTML = '';
+            kpis.forEach((kpi, idx) => {
+                let html = `<div class="mb-3 border p-2">
+                    <strong>KPI: ${kpi.name}</strong>
+                    <ul class="mb-2">`;
+                kpi.measures.forEach((msr, i) => {
+                    html += `<li>${msr} <button class="btn btn-sm btn-danger" onclick="removeMeasure(${idx},${i})">删除</button></li>`;
+                });
+                html += `</ul>
+                    <div class="input-group mb-1" style="max-width:400px;">
+                        <input class="form-control" id="input-${idx}" placeholder="新增关键措施">
+                        <button class="btn btn-success" onclick="addMeasure(${idx})">添加措施</button>
+                    </div>
+                </div>`;
+                kpiList.innerHTML += html;
+            });
+        }
+
+        function addMeasure(idx) {
+            const input = document.getElementById(`input-${idx}`);
+            if (input.value.trim()) {
+                kpis[idx].measures.push(input.value.trim());
+                input.value = '';
+                renderKPIs();
+            }
+        }
+
+        function removeMeasure(kpiIdx, msrIdx) {
+            kpis[kpiIdx].measures.splice(msrIdx, 1);
+            renderKPIs();
+        }
+
+        function addKPI() {
+            const newName = prompt("请输入新KPI名称：");
+            if (newName && newName.trim()) {
+                kpis.push({ name: newName.trim(), measures: [] });
+                renderKPIs();
+            }
+        }
+
+        renderKPIs();
+
+        // 人员完成度数据
         const memberData = [
             { name: "张三", finished: 8, total: 10 },
             { name: "李四", finished: 5, total: 10 },
             { name: "王五", finished: 10, total: 10 }
         ];
 
-        // 3. 排名&渲染
+        // 排名&渲染（按完成率降序）
         memberData.sort((a, b) => (b.finished/b.total) - (a.finished/b.total));
         const rankTbody = document.querySelector('#rankTable tbody');
         memberData.forEach((m, idx) => {
