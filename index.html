@@ -2,255 +2,739 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Team KPI & Issue Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Team KPI & Issue Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: "Microsoft YaHei", sans-serif;
+        :root {
+            --primary: #1a6dcc;
+            --primary-dark: #155db3;
+            --secondary: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --shadow: rgba(0,0,0,0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
-            background: #f4f6f9;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
             color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
         }
-        h1, h2 {
-            color: #1a6dcc;
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 992px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h2 {
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+        
+        .card-header i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
-        th, td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
+        
         th {
-            background: #1a6dcc;
+            background: var(--primary);
             color: white;
+            text-align: left;
+            padding: 15px;
+            font-weight: 600;
         }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .actions-cell {
+            text-align: center;
+        }
+        
         textarea, input, select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        textarea {
+            min-height: 80px;
             resize: vertical;
         }
-        button {
-            padding: 10px 15px;
-            background-color: #1a6dcc;
+        
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 109, 204, 0.1);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn i {
+            font-size: 1.1rem;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-icon {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+        }
+        
+        .chart-container {
+            margin-top: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-todo {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #856404;
+        }
+        
+        .status-inprogress {
+            background-color: rgba(26, 109, 204, 0.2);
+            color: #0a3d78;
+        }
+        
+        .status-done {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #155724;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
             margin-top: 10px;
         }
-        button:hover {
-            background-color: #155db3;
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 5px;
         }
-        canvas {
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
             background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 20px;
+            border-left: 4px solid var(--primary);
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+        
+        .delete-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #e9ecef;
+        }
+        
+        .empty-state p {
+            font-size: 1.1rem;
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+        }
+        
+        .sync-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 </head>
 <body>
-
-<h1>Team KPI & Issue Tracker</h1>
-
-<h2>KPI Goals & Progress</h2>
-<table id="kpi-table">
-    <thead>
-        <tr>
-            <th>Core KPI</th>
-            <th>Key Actions</th>
-            <th>This Week Review</th>
-            <th>Next Week Plan</th>
-            <th>Owner</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><input placeholder="e.g. Customer satisfaction ≥ 90%"></td>
-            <td><input placeholder="e.g. Improve response time"></td>
-            <td><textarea></textarea></td>
-            <td><textarea></textarea></td>
-            <td><input placeholder="e.g. Jack Zhang"></td>
-        </tr>
-    </tbody>
-</table>
-<button onclick="addRow('kpi-table')">➕ Add KPI</button>
-
-<h2>Issue Tracking List</h2>
-<table id="issue-table">
-    <thead>
-        <tr>
-            <th>Issue Description</th>
-            <th>Owner</th>
-            <th>Status</th>
-            <th>Estimated Completion</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><textarea></textarea></td>
-            <td><input></td>
-            <td><select>
-                <option>To Do</option>
-                <option>In Progress</option>
-                <option>Done</option>
-            </select></td>
-            <td><input type="date"></td>
-        </tr>
-    </tbody>
-</table>
-<button onclick="addRow('issue-table')">➕ Add Issue</button>
-
-<h2>Owner Completion Rate Chart</h2>
-<canvas id="progressChart" width="600" height="300"></canvas>
-
-<script>
-function addRow(tableId) {
-    const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-    const row = table.rows[0].cloneNode(true);
-    row.querySelectorAll('input, textarea').forEach(el => el.value = "");
-    row.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
-    table.appendChild(row);
-    triggerSync(tableId); // 新增行后也同步
-}
-
-function updateChart() {
-    const rows = document.getElementById('issue-table').getElementsByTagName('tbody')[0].rows;
-    const counts = {};
-    for (let row of rows) {
-        const name = row.cells[1].querySelector('input').value.trim();
-        const status = row.cells[2].querySelector('select').value;
-        if (!name) continue;
-        if (!counts[name]) counts[name] = { total: 0, done: 0 };
-        counts[name].total++;
-        if (status === 'Done') counts[name].done++;
-    }
-
-    const labels = Object.keys(counts);
-    const data = labels.map(name => {
-        const c = counts[name];
-        return Math.round((c.done / c.total) * 100);
-    });
-
-    progressChart.data.labels = labels;
-    progressChart.data.datasets[0].data = data;
-    progressChart.update();
-}
-
-const ctx = document.getElementById('progressChart').getContext('2d');
-const progressChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Completion Rate (%)',
-            data: [],
-            backgroundColor: '#2c87e6'
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                    callback: value => value + '%'
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Team KPI & Issue Tracker</h1>
+            <p class="subtitle">Track your team's performance, goals, and issues in real-time with collaborative features</p>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <i class="fas fa-bullseye fa-2x" style="color: #1a6dcc;"></i>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Active KPIs</div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 75%"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-tasks fa-2x" style="color: #28a745;"></i>
+                <div class="stat-value">24</div>
+                <div class="stat-label">Total Issues</div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 45%"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-users fa-2x" style="color: #ffc107;"></i>
+                <div class="stat-value">8</div>
+                <div class="stat-label">Team Members</div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 60%"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle fa-2x" style="color: #dc3545;"></i>
+                <div class="stat-value">83%</div>
+                <div class="stat-label">Completion Rate</div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 83%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-bullseye"></i> KPI Goals & Progress</h2>
+                    <button class="btn" onclick="addRow('kpi-table')">
+                        <i class="fas fa-plus"></i> Add KPI
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="kpi-table">
+                        <thead>
+                            <tr>
+                                <th>Core KPI</th>
+                                <th>Key Actions</th>
+                                <th>This Week Review</th>
+                                <th>Next Week Plan</th>
+                                <th>Owner</th>
+                                <th width="50">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input placeholder="Customer satisfaction ≥ 90%"></td>
+                                <td><input placeholder="Improve response time"></td>
+                                <td><textarea>Conducted customer feedback survey</textarea></td>
+                                <td><textarea>Implement new support workflow</textarea></td>
+                                <td><input placeholder="Jack Zhang"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><input placeholder="Reduce bug reports by 20%"></td>
+                                <td><input placeholder="Improve QA process"></td>
+                                <td><textarea>Implemented new testing protocol</textarea></td>
+                                <td><textarea>Train team on new QA tools</textarea></td>
+                                <td><input placeholder="Sarah Johnson"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><input placeholder="Increase feature delivery"></td>
+                                <td><input placeholder="Optimize dev workflow"></td>
+                                <td><textarea>Reduced meeting time by 30%</textarea></td>
+                                <td><textarea>Implement CI/CD pipeline</textarea></td>
+                                <td><input placeholder="Michael Chen"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-exclamation-circle"></i> Issue Tracking</h2>
+                    <button class="btn" onclick="addRow('issue-table')">
+                        <i class="fas fa-plus"></i> Add Issue
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="issue-table">
+                        <thead>
+                            <tr>
+                                <th>Issue Description</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Completion Date</th>
+                                <th width="50">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><textarea>Login page fails on mobile devices</textarea></td>
+                                <td><input value="Alex Rivera"></td>
+                                <td>
+                                    <select onchange="updateStatusBadge(this)">
+                                        <option>To Do</option>
+                                        <option selected>In Progress</option>
+                                        <option>Done</option>
+                                    </select>
+                                    <div class="status-badge status-inprogress">In Progress</div>
+                                </td>
+                                <td><input type="date" value="2023-11-15"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><textarea>Database performance issues</textarea></td>
+                                <td><input value="Emma Wilson"></td>
+                                <td>
+                                    <select onchange="updateStatusBadge(this)">
+                                        <option>To Do</option>
+                                        <option selected>In Progress</option>
+                                        <option>Done</option>
+                                    </select>
+                                    <div class="status-badge status-inprogress">In Progress</div>
+                                </td>
+                                <td><input type="date" value="2023-11-20"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><textarea>User onboarding flow too complex</textarea></td>
+                                <td><input value="David Kim"></td>
+                                <td>
+                                    <select onchange="updateStatusBadge(this)">
+                                        <option selected>To Do</option>
+                                        <option>In Progress</option>
+                                        <option>Done</option>
+                                    </select>
+                                    <div class="status-badge status-todo">To Do</div>
+                                </td>
+                                <td><input type="date" value="2023-12-01"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><textarea>Payment processing failure</textarea></td>
+                                <td><input value="Sophia Martinez"></td>
+                                <td>
+                                    <select onchange="updateStatusBadge(this)">
+                                        <option>To Do</option>
+                                        <option>In Progress</option>
+                                        <option selected>Done</option>
+                                    </select>
+                                    <div class="status-badge status-done">Done</div>
+                                </td>
+                                <td><input type="date" value="2023-11-10"></td>
+                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-bar"></i> Owner Completion Rate</h2>
+                <div>
+                    <button class="btn btn-sm" onclick="updateChart()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <canvas id="progressChart" height="300"></canvas>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i> Data saved successfully!
+    </div>
+    
+    <div class="sync-indicator" id="sync-indicator">
+        <i class="fas fa-sync fa-spin"></i> Syncing data...
+    </div>
+    
+    <footer>
+        <p>Team KPI & Issue Tracker v2.0 | Real-time Collaborative Dashboard</p>
+    </footer>
+    
+    <script>
+        // Initialize Chart
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        const progressChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Jack Zhang', 'Sarah Johnson', 'Michael Chen', 'Alex Rivera', 'Emma Wilson'],
+                datasets: [{
+                    label: 'Completion Rate (%)',
+                    data: [75, 60, 90, 40, 85],
+                    backgroundColor: [
+                        '#1a6dcc',
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545',
+                        '#6f42c1'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        padding: 12,
+                        cornerRadius: 6,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: value => value + '%',
+                            stepSize: 20
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
                 }
             }
+        });
+        
+        // Update status badge
+        function updateStatusBadge(selectElement) {
+            const badge = selectElement.nextElementSibling;
+            const status = selectElement.value;
+            badge.className = 'status-badge status-' + status.toLowerCase().replace(' ', '');
+            badge.textContent = status;
+            
+            // Show notification
+            showNotification('Status updated successfully!');
         }
-    }
-});
-
-// Auto update chart every 5 seconds
-setInterval(updateChart, 5000);
-</script>
-
-<!-- 多人协作实时编辑核心功能开始 -->
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-// 请将下行地址替换为你的 Socket.io 服务器地址
-const socket = io('http://你的服务器IP:端口');
-
-function getTableData(tableId) {
-    const table = document.getElementById(tableId);
-    const data = [];
-    table.querySelectorAll('tbody tr').forEach(row => {
-        const rowData = [];
-        row.querySelectorAll('input, textarea, select').forEach(el => {
-            rowData.push(el.value);
+        
+        // Add new row
+        function addRow(tableId) {
+            const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+            const row = table.rows[0].cloneNode(true);
+            
+            // Clear inputs
+            row.querySelectorAll('input, textarea').forEach(el => {
+                if (el.type !== 'button') el.value = '';
+            });
+            
+            // Reset status
+            const select = row.querySelector('select');
+            if (select) {
+                select.selectedIndex = 0;
+                updateStatusBadge(select);
+            }
+            
+            table.appendChild(row);
+            
+            // Show notification
+            showNotification('New row added successfully!');
+        }
+        
+        // Delete row
+        function deleteRow(btn) {
+            const row = btn.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            
+            // Show notification
+            showNotification('Row deleted successfully!');
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Show sync indicator
+        function showSyncIndicator() {
+            const indicator = document.getElementById('sync-indicator');
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        // Simulate periodic sync
+        setInterval(() => {
+            showSyncIndicator();
+        }, 10000);
+        
+        // Initialize status badges
+        document.querySelectorAll('select').forEach(select => {
+            if (select.nextElementSibling && select.nextElementSibling.classList.contains('status-badge')) {
+                updateStatusBadge(select);
+            }
         });
-        data.push(rowData);
-    });
-    return data;
-}
-
-function setTableData(tableId, data) {
-    const table = document.getElementById(tableId);
-    const tbody = table.querySelector('tbody');
-    // 清空
-    while (tbody.rows.length > 0) {
-        tbody.deleteRow(0);
-    }
-    // 按新数据补充
-    data.forEach(rowData => {
-        const tr = table.rows[1] ? table.rows[1].cloneNode(true) : table.rows[0].cloneNode(true);
-        tr.querySelectorAll('input, textarea, select').forEach((el, idx) => {
-            el.value = rowData[idx] || "";
+        
+        // Add some interactivity to inputs
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.addEventListener('focus', function() {
+                this.parentNode.style.backgroundColor = '#f8fbff';
+            });
+            
+            el.addEventListener('blur', function() {
+                this.parentNode.style.backgroundColor = '';
+            });
         });
-        tbody.appendChild(tr);
-    });
-    // 若无数据，补一行空的
-    if (data.length === 0 && table.rows[0]) {
-        const tr = table.rows[0].cloneNode(true);
-        tr.querySelectorAll('input, textarea, select').forEach(el => el.value = "");
-        tbody.appendChild(tr);
-    }
-    updateChart();
-}
-
-function triggerSync(tableId) {
-    const data = getTableData(tableId);
-    socket.emit('table-update', { tableId, data });
-}
-
-// 监听输入和结构变更
-['kpi-table', 'issue-table'].forEach(tableId => {
-    document.getElementById(tableId).addEventListener('input', () => triggerSync(tableId));
-});
-
-// 监听按钮新增行
-document.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-        setTimeout(() => {
-            ['kpi-table', 'issue-table'].forEach(tableId => triggerSync(tableId));
-        }, 10);
-    });
-});
-
-// 接收并更新
-socket.on('table-update', ({ tableId, data }) => {
-    setTableData(tableId, data);
-});
-
-// 新连接立即获取最新内容
-socket.on('connect', () => {
-    socket.emit('get-initial');
-});
-socket.on('initial-data', (tables) => {
-    Object.keys(tables).forEach(tableId => setTableData(tableId, tables[tableId]));
-});
-</script>
-<!-- 多人协作实时编辑核心功能结束 -->
-
+        
+        // Update chart button
+        function updateChart() {
+            // Simulate data update
+            progressChart.data.datasets[0].data = progressChart.data.datasets[0].data.map(
+                () => Math.floor(Math.random() * 40) + 60
+            );
+            progressChart.update();
+            
+            showNotification('Chart updated with latest data!');
+        }
+        
+        // Simulate real-time collaboration
+        setInterval(() => {
+            // Randomly update a KPI
+            const kpiInputs = document.querySelectorAll('#kpi-table input');
+            if (kpiInputs.length > 0) {
+                const randomInput = kpiInputs[Math.floor(Math.random() * kpiInputs.length)];
+                if (Math.random() > 0.7) {
+                    randomInput.value = randomInput.value + (Math.random() > 0.5 ? '✓' : '⭐');
+                    randomInput.parentNode.style.backgroundColor = '#e8f4ff';
+                    setTimeout(() => {
+                        randomInput.parentNode.style.backgroundColor = '';
+                    }, 1000);
+                }
+            }
+        }, 5000);
+    </script>
 </body>
 </html>
