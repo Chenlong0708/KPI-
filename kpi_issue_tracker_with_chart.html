@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>团队KPI与问题追踪</title>
+    <title>Team KPI & Issue Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: "Microsoft YaHei", sans-serif;
@@ -58,61 +58,74 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-top: 20px;
         }
+        .download-btn {
+            float: right;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
 
-<h1>团队KPI与问题追踪</h1>
+<h1>Team KPI & Issue Tracker</h1>
 
-<h2>KPI 目标与进展</h2>
+<h2>
+    KPI Goals & Progress
+    <button class="download-btn" onclick="downloadTableAsExcel('kpi-table', 'KPI_Data.xlsx')">Download as Excel</button>
+</h2>
 <table id="kpi-table">
     <thead>
         <tr>
-            <th>核心KPI</th>
-            <th>关键行动</th>
-            <th>本周回顾</th>
-            <th>下周计划</th>
-            <th>责任人</th>
+            <th>Core KPI</th>
+            <th>Key Actions</th>
+            <th>This Week Review</th>
+            <th>Next Week Plan</th>
+            <th>Owner</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td><input placeholder="如 客户满意度 ≥ 90%"></td>
-            <td><input placeholder="如 提升响应速度"></td>
+            <td><input placeholder="e.g. Customer Satisfaction ≥ 90%"></td>
+            <td><input placeholder="e.g. Improve response speed"></td>
             <td><textarea></textarea></td>
             <td><textarea></textarea></td>
-            <td><input placeholder="如 张明"></td>
+            <td><input placeholder="e.g. John Doe"></td>
         </tr>
     </tbody>
 </table>
-<button onclick="addRow('kpi-table')">➕ 添加KPI</button>
+<button onclick="addRow('kpi-table')">➕ Add KPI</button>
 
-<h2>问题清单追踪</h2>
+<h2>
+    Issue Tracking
+    <button class="download-btn" onclick="downloadTableAsExcel('issue-table', 'Issue_Data.xlsx')">Download as Excel</button>
+</h2>
 <table id="issue-table">
     <thead>
         <tr>
-            <th>问题描述</th>
-            <th>负责人</th>
-            <th>状态</th>
-            <th>预计完成时间</th>
+            <th>Description</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Estimated Completion</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td><textarea></textarea></td>
             <td><input></td>
-            <td><select>
-                <option>待处理</option>
-                <option>处理中</option>
-                <option>已完成</option>
-            </select></td>
+            <td>
+                <select>
+                    <option>Pending</option>
+                    <option>In Progress</option>
+                    <option>Done</option>
+                </select>
+            </td>
             <td><input type="date"></td>
         </tr>
     </tbody>
 </table>
-<button onclick="addRow('issue-table')">➕ 添加问题</button>
+<button onclick="addRow('issue-table')">➕ Add Issue</button>
 
-<h2>责任人完成情况统计图</h2>
+<h2>Completion Statistics by Owner</h2>
 <canvas id="progressChart" width="600" height="300"></canvas>
 
 <script>
@@ -133,13 +146,13 @@ function updateChart() {
         if (!name) continue;
         if (!counts[name]) counts[name] = { total: 0, done: 0 };
         counts[name].total++;
-        if (status === '已完成') counts[name].done++;
+        if (status === 'Done') counts[name].done++;
     }
 
     const labels = Object.keys(counts);
     const data = labels.map(name => {
         const c = counts[name];
-        return Math.round((c.done / c.total) * 100);
+        return c.total === 0 ? 0 : Math.round((c.done / c.total) * 100);
     });
 
     progressChart.data.labels = labels;
@@ -153,7 +166,7 @@ const progressChart = new Chart(ctx, {
     data: {
         labels: [],
         datasets: [{
-            label: '完成率 (%)',
+            label: 'Completion Rate (%)',
             data: [],
             backgroundColor: '#2c87e6'
         }]
@@ -171,8 +184,40 @@ const progressChart = new Chart(ctx, {
     }
 });
 
-// 自动统计图更新（每5秒）
+// Auto-update chart every 5s
 setInterval(updateChart, 5000);
+
+// Download as Excel function (SheetJS)
+function downloadTableAsExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    const wb = XLSX.utils.book_new();
+
+    // Extract table data, including current inputs/textareas/selects values
+    const ws_data = [];
+    const headers = [];
+    table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText));
+    ws_data.push(headers);
+
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+            let val = '';
+            if (td.querySelector('input')) {
+                val = td.querySelector('input').value;
+            } else if (td.querySelector('textarea')) {
+                val = td.querySelector('textarea').value;
+            } else if (td.querySelector('select')) {
+                val = td.querySelector('select').value;
+            }
+            row.push(val);
+        });
+        ws_data.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    XLSX.writeFile(wb, filename);
+}
 </script>
 
 </body>
