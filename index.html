@@ -82,16 +82,10 @@
         }
         
         .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 25px;
             margin-bottom: 30px;
-        }
-        
-        @media (max-width: 992px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
         }
         
         .card {
@@ -420,20 +414,49 @@
             100% { transform: scale(1); }
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--gray);
+        .collaborators {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #e9ecef;
+        .collaborator {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         
-        .empty-state p {
-            font-size: 1.1rem;
+        .user-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .user-input {
+            position: relative;
+        }
+        
+        .user-input::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--user-color);
+        }
+        
+        .user-highlight {
+            box-shadow: 0 0 0 2px var(--user-color);
+            transition: box-shadow 0.3s;
         }
     </style>
 </head>
@@ -446,12 +469,15 @@
             </div>
             <h1><i class="fas fa-chart-network"></i> 团队KPI与问题跟踪系统</h1>
             <p class="subtitle">实时协作、数据同步、智能分析 - 助力团队高效协作</p>
+            <div class="collaborators" id="collaborators">
+                <!-- 协作者列表由JS动态生成 -->
+            </div>
         </header>
         
         <div class="stats-container">
             <div class="stat-card">
                 <i class="fas fa-bullseye" style="color: var(--primary);"></i>
-                <div class="stat-value" id="kpi-count">7</div>
+                <div class="stat-value" id="kpi-count">5</div>
                 <div class="stat-label">活跃KPI指标</div>
                 <div class="progress-bar">
                     <div class="progress" style="background-color: var(--primary); width: 75%"></div>
@@ -459,7 +485,7 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-tasks" style="color: var(--success);"></i>
-                <div class="stat-value" id="issue-count">18</div>
+                <div class="stat-value" id="issue-count">12</div>
                 <div class="stat-label">跟踪中问题</div>
                 <div class="progress-bar">
                     <div class="progress" style="background-color: var(--success); width: 45%"></div>
@@ -467,7 +493,7 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-users" style="color: var(--warning);"></i>
-                <div class="stat-value" id="member-count">9</div>
+                <div class="stat-value" id="member-count">5</div>
                 <div class="stat-label">团队成员</div>
                 <div class="progress-bar">
                     <div class="progress" style="background-color: var(--warning); width: 60%"></div>
@@ -475,10 +501,10 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-check-circle" style="color: var(--danger);"></i>
-                <div class="stat-value" id="completion-rate">78%</div>
+                <div class="stat-value" id="completion-rate">68%</div>
                 <div class="stat-label">整体完成率</div>
                 <div class="progress-bar">
-                    <div class="progress" style="background-color: var(--danger); width: 78%"></div>
+                    <div class="progress" style="background-color: var(--danger); width: 68%"></div>
                 </div>
             </div>
         </div>
@@ -616,7 +642,7 @@
     </div>
     
     <footer>
-        <p>团队KPI与问题跟踪系统 v2.0 | 实时协作仪表板 | © 2023 团队效率解决方案</p>
+        <p>团队KPI与问题跟踪系统 v3.0 | 实时协作仪表板 | © 2023 团队效率解决方案</p>
     </footer>
 
     <script>
@@ -624,7 +650,15 @@
         let teamMembers = new Set(['张伟', '李娜', '王刚', '赵敏', '陈明']);
         let issueCount = 3;
         let kpiCount = 2;
-        let completionRate = 78;
+        let completionRate = 68;
+        let currentUser = {
+            id: 'user_' + Math.random().toString(36).substr(2, 9),
+            name: '用户' + Math.floor(Math.random() * 1000),
+            color: '#' + Math.floor(Math.random()*16777215).toString(16)
+        };
+        
+        // 在线用户列表
+        let onlineUsers = {};
         
         // 初始化图表
         const ctx = document.getElementById('progressChart').getContext('2d');
@@ -716,6 +750,7 @@
             // 更新统计数据
             updateStats();
             showNotification('状态更新成功！');
+            updateChart(); // 状态更新后刷新图表
         }
         
         // 添加新行
@@ -748,6 +783,7 @@
             }
             
             showNotification('新行添加成功！');
+            updateChart(); // 添加新行后刷新图表
         }
         
         // 删除行
@@ -769,6 +805,7 @@
                 
                 updateStats();
                 showNotification('行删除成功！');
+                updateChart(); // 删除行后刷新图表
             } else {
                 showNotification('不能删除最后一行！', true);
             }
@@ -795,19 +832,61 @@
             }, 2000);
         }
         
-        // 更新图表数据
+        // 更新图表数据（基于问题跟踪表）
         function updateChart() {
-            // 获取所有负责人
-            const owners = Array.from(teamMembers);
-            const completionRates = owners.map(() => Math.floor(Math.random() * 30) + 60);
+            // 从问题跟踪表获取数据
+            const issues = [];
+            const issueRows = document.querySelectorAll('#issue-table tbody tr');
+            
+            issueRows.forEach(row => {
+                const desc = row.querySelector('textarea').value;
+                const owner = row.querySelector('.owner-input').value;
+                const status = row.querySelector('select').value;
+                const date = row.querySelector('input[type="date"]').value;
+                
+                if (owner && desc) {
+                    issues.push({
+                        owner,
+                        status,
+                        date
+                    });
+                }
+            });
+            
+            // 按负责人分组
+            const ownerStats = {};
+            
+            issues.forEach(issue => {
+                if (!ownerStats[issue.owner]) {
+                    ownerStats[issue.owner] = {
+                        total: 0,
+                        done: 0
+                    };
+                }
+                
+                ownerStats[issue.owner].total++;
+                if (issue.status === '已完成') {
+                    ownerStats[issue.owner].done++;
+                }
+            });
+            
+            // 准备图表数据
+            const owners = Object.keys(ownerStats);
+            const completionRates = owners.map(owner => {
+                const stats = ownerStats[owner];
+                return Math.round((stats.done / stats.total) * 100);
+            });
             
             // 更新图表
             progressChart.data.labels = owners;
             progressChart.data.datasets[0].data = completionRates;
             progressChart.update();
             
-            // 更新完成率
-            const avgRate = Math.round(completionRates.reduce((a, b) => a + b, 0) / completionRates.length);
+            // 更新整体完成率
+            const totalDone = Object.values(ownerStats).reduce((sum, stats) => sum + stats.done, 0);
+            const totalIssues = Object.values(ownerStats).reduce((sum, stats) => sum + stats.total, 0);
+            const avgRate = totalIssues > 0 ? Math.round((totalDone / totalIssues) * 100) : 0;
+            
             document.getElementById('completion-rate').textContent = `${avgRate}%`;
             completionRate = avgRate;
             
@@ -826,8 +905,27 @@
             completionRate = newRate;
         }
         
+        // 更新在线用户列表
+        function updateOnlineUsers() {
+            const container = document.getElementById('collaborators');
+            container.innerHTML = '';
+            
+            Object.values(onlineUsers).forEach(user => {
+                const el = document.createElement('div');
+                el.className = 'collaborator';
+                el.innerHTML = `
+                    <span class="user-color" style="background-color: ${user.color}"></span>
+                    ${user.name}
+                `;
+                container.appendChild(el);
+            });
+        }
+        
         // 初始化页面
         document.addEventListener('DOMContentLoaded', () => {
+            // 设置当前用户
+            document.getElementById('username').textContent = currentUser.name + ' (在线)';
+            
             // 初始化状态徽章
             document.querySelectorAll('select').forEach(select => {
                 if (select.nextElementSibling && select.nextElementSibling.classList.contains('status-badge')) {
@@ -839,10 +937,12 @@
             document.querySelectorAll('input, textarea, select').forEach(el => {
                 el.addEventListener('focus', function() {
                     this.parentNode.style.backgroundColor = '#f0f7ff';
+                    this.classList.add('user-highlight');
                 });
                 
                 el.addEventListener('blur', function() {
                     this.parentNode.style.backgroundColor = '';
+                    this.classList.remove('user-highlight');
                 });
             });
             
@@ -858,6 +958,7 @@
                     if (this.value && !teamMembers.has(this.value)) {
                         teamMembers.add(this.value);
                         updateStats();
+                        updateChart();
                     }
                 });
             });
@@ -870,6 +971,7 @@
                     if (randomInput && randomInput.value) {
                         randomInput.value = randomInput.value + (Math.random() > 0.5 ? '✓' : '');
                         showSyncIndicator();
+                        updateChart();
                     }
                 }
                 
@@ -881,9 +983,20 @@
                         teamMembers.add(newMember);
                         updateStats();
                         showNotification(`${newMember} 加入了团队！`);
+                        updateChart();
                     }
                 }
+                
+                // 更新在线用户列表
+                onlineUsers = {
+                    ...onlineUsers,
+                    [currentUser.id]: currentUser
+                };
+                updateOnlineUsers();
             }, 5000);
+            
+            // 初始更新图表
+            updateChart();
         });
     </script>
 </body>
