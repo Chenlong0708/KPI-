@@ -52,6 +52,21 @@
     </table>
     <p id="issueCountLabel">当前问题总数：<span id="issueCount"></span></p>
 
+    <!-- 问题完成率排名 -->
+    <h3 id="issueRankTitle" class="mt-4">问题完成率排名</h3>
+    <table class="table table-bordered" id="issueRankTable">
+        <thead class="table-dark">
+            <tr>
+                <th id="issueRankTh">排名</th>
+                <th id="issueRankDescTh">问题描述</th>
+                <th id="issueRankOwnerTh">责任人</th>
+                <th id="issueRankStatusTh">状态</th>
+                <th id="issueRankProgressTh">进度</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
     <!-- KPI及关键措施 -->
     <h2 class="mt-5" id="kpiTitle">KPI及关键措施</h2>
     <div id="kpiList"></div>
@@ -102,7 +117,13 @@
                 total: "总任务数",
                 rate: "完成率",
                 saveSuccess: "保存成功！",
-                noHistory: "暂无历史内容"
+                noHistory: "暂无历史内容",
+                issueRankTitle: "问题完成率排名",
+                issueRankDesc: "问题描述",
+                issueRankOwner: "责任人",
+                issueRankStatus: "状态",
+                issueRankProgress: "进度",
+                issueRankRank: "排名"
             },
             'en': {
                 mainTitle: "Team KPI Management & Issue Tracking",
@@ -127,7 +148,13 @@
                 total: "Total Tasks",
                 rate: "Finish Rate",
                 saveSuccess: "Saved!",
-                noHistory: "No history yet"
+                noHistory: "No history yet",
+                issueRankTitle: "Issue Completion Ranking",
+                issueRankDesc: "Issue",
+                issueRankOwner: "Owner",
+                issueRankStatus: "Status",
+                issueRankProgress: "Progress",
+                issueRankRank: "Rank"
             }
         };
 
@@ -209,7 +236,14 @@
             document.getElementById('finishedTh').textContent = isEn ? langText.en.finished : langText.zh.finished;
             document.getElementById('totalTh').textContent = isEn ? langText.en.total : langText.zh.total;
             document.getElementById('rateTh').textContent = isEn ? langText.en.rate : langText.zh.rate;
+            document.getElementById('issueRankTitle').textContent = isEn ? langText.en.issueRankTitle : langText.zh.issueRankTitle;
+            document.getElementById('issueRankTh').textContent = isEn ? langText.en.issueRankRank : langText.zh.issueRankRank;
+            document.getElementById('issueRankDescTh').textContent = isEn ? langText.en.issueRankDesc : langText.zh.issueRankDesc;
+            document.getElementById('issueRankOwnerTh').textContent = isEn ? langText.en.issueRankOwner : langText.zh.issueRankOwner;
+            document.getElementById('issueRankStatusTh').textContent = isEn ? langText.en.issueRankStatus : langText.zh.issueRankStatus;
+            document.getElementById('issueRankProgressTh').textContent = isEn ? langText.en.issueRankProgress : langText.zh.issueRankProgress;
             renderKPIs();
+            renderIssueRankTable();
         };
 
         // 每周内容保存与回顾
@@ -257,6 +291,46 @@
                 </tr>
             `;
         });
+
+        // 问题完成率排名
+        function parseProgress(str) {
+            if (str.includes('%')) return Number(str.replace('%', ''));
+            return 0;
+        }
+        function renderIssueRankTable() {
+            const rows = Array.from(document.querySelectorAll('#issueTable tbody tr')).map(tr => {
+                const tds = tr.querySelectorAll('td');
+                // 获取进度百分比文本
+                let progressText = tds[4].innerText.trim();
+                // 兼容直接为0%的情况
+                let progress = parseProgress(progressText);
+                return {
+                    issue: tds[1].innerText,
+                    owner: tds[2].innerText,
+                    status: tds[3].innerText,
+                    progressText: progressText,
+                    progress: progress
+                };
+            });
+            rows.sort((a, b) => b.progress - a.progress);
+
+            const tbody = document.querySelector('#issueRankTable tbody');
+            tbody.innerHTML = '';
+            rows.forEach((row, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx+1}</td>
+                        <td>${row.issue}</td>
+                        <td>${row.owner}</td>
+                        <td>${row.status}</td>
+                        <td>${row.progressText}</td>
+                    </tr>
+                `;
+            });
+        }
+        // 初始化时渲染一次
+        renderIssueRankTable();
+
     </script>
 </body>
 </html>
