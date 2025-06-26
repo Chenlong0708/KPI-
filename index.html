@@ -1,24 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Team KPI & Issue Tracker</title>
+    <title>团队KPI与问题跟踪系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #1a6dcc;
-            --primary-dark: #155db3;
-            --secondary: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
             --light: #f8f9fa;
-            --dark: #343a40;
+            --dark: #212529;
             --gray: #6c757d;
             --border: #dee2e6;
-            --shadow: rgba(0,0,0,0.1);
+            --card-bg: #ffffff;
+            --body-bg: #f0f4f8;
+            --success: #06d6a0;
         }
         
         * {
@@ -28,8 +30,8 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: var(--body-bg);
             color: #333;
             line-height: 1.6;
             padding: 20px;
@@ -45,9 +47,10 @@
             text-align: center;
             margin-bottom: 30px;
             padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, var(--primary) 0%, #3a56d4 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: white;
             position: relative;
             overflow: hidden;
         }
@@ -59,20 +62,23 @@
             left: 0;
             width: 100%;
             height: 5px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            background: linear-gradient(90deg, var(--secondary), var(--warning));
         }
         
         h1 {
-            color: var(--primary);
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
         }
         
         .subtitle {
-            color: var(--gray);
             font-size: 1.2rem;
             max-width: 700px;
             margin: 0 auto;
+            opacity: 0.9;
         }
         
         .dashboard {
@@ -89,16 +95,16 @@
         }
         
         .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
             padding: 25px;
             transition: transform 0.3s, box-shadow 0.3s;
         }
         
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
         }
         
         .card-header {
@@ -113,10 +119,12 @@
         h2 {
             color: var(--primary);
             font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .card-header i {
-            color: var(--primary);
             font-size: 1.5rem;
         }
         
@@ -124,6 +132,8 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
         }
         
         th {
@@ -135,12 +145,17 @@
         }
         
         tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
         }
         
         td {
             padding: 15px;
             border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s;
+        }
+        
+        tr:hover td {
+            background-color: #edf2ff;
         }
         
         .actions-cell {
@@ -149,12 +164,13 @@
         
         textarea, input, select {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 5px;
+            border-radius: 8px;
             font-family: inherit;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            background: #f8fafc;
         }
         
         textarea {
@@ -165,82 +181,92 @@
         textarea:focus, input:focus, select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 109, 204, 0.1);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            background: white;
         }
         
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 12px 20px;
+            padding: 12px 24px;
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
             transition: all 0.3s;
             gap: 8px;
+            box-shadow: 0 4px 6px rgba(67, 97, 238, 0.3);
         }
         
         .btn:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(67, 97, 238, 0.4);
         }
         
-        .btn i {
-            font-size: 1.1rem;
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            box-shadow: 0 4px 6px rgba(6, 214, 160, 0.3);
+        }
+        
+        .btn-success:hover {
+            background-color: #05b98a;
+            box-shadow: 0 6px 10px rgba(6, 214, 160, 0.4);
         }
         
         .btn-danger {
             background-color: var(--danger);
+            box-shadow: 0 4px 6px rgba(239, 71, 111, 0.3);
         }
         
         .btn-danger:hover {
-            background-color: #c82333;
-        }
-        
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.9rem;
-        }
-        
-        .btn-icon {
-            padding: 8px;
-            width: 36px;
-            height: 36px;
+            background-color: #d13e63;
+            box-shadow: 0 6px 10px rgba(239, 71, 111, 0.4);
         }
         
         .chart-container {
             margin-top: 30px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
             padding: 25px;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 600;
+            margin-top: 8px;
         }
         
         .status-todo {
-            background-color: rgba(255, 193, 7, 0.2);
-            color: #856404;
+            background-color: rgba(255, 209, 102, 0.2);
+            color: #b38b00;
         }
         
         .status-inprogress {
-            background-color: rgba(26, 109, 204, 0.2);
-            color: #0a3d78;
+            background-color: rgba(67, 97, 238, 0.2);
+            color: #2c3eaa;
         }
         
         .status-done {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #155724;
+            background-color: rgba(6, 214, 160, 0.2);
+            color: #038a65;
         }
         
         .stats-container {
@@ -252,10 +278,20 @@
         
         .stat-card {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
             padding: 20px;
             text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
         }
         
         .stat-value {
@@ -267,7 +303,8 @@
         
         .stat-label {
             color: var(--gray);
-            font-size: 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
         
         .progress-bar {
@@ -275,12 +312,11 @@
             background-color: #e9ecef;
             border-radius: 5px;
             overflow: hidden;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         
         .progress {
             height: 100%;
-            background-color: var(--primary);
             border-radius: 5px;
         }
         
@@ -290,23 +326,30 @@
             right: 20px;
             padding: 15px 25px;
             background: white;
-            border-left: 4px solid var(--primary);
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--success);
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
             transform: translateX(120%);
-            transition: transform 0.3s ease-out;
+            transition: transform 0.4s ease-out;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .notification.show {
             transform: translateX(0);
         }
         
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+        
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 25px;
             color: var(--gray);
-            font-size: 0.9rem;
+            font-size: 1rem;
             margin-top: 30px;
         }
         
@@ -317,10 +360,64 @@
             cursor: pointer;
             font-size: 1.2rem;
             transition: transform 0.3s;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
         
         .delete-btn:hover {
-            transform: scale(1.2);
+            transform: scale(1.1);
+            background-color: rgba(239, 71, 111, 0.1);
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sync-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .user-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .user-indicator i {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         .empty-state {
@@ -338,69 +435,50 @@
         .empty-state p {
             font-size: 1.1rem;
         }
-        
-        .sync-indicator {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: var(--primary);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-        }
-        
-        .sync-indicator.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-chart-line"></i> Team KPI & Issue Tracker</h1>
-            <p class="subtitle">Track your team's performance, goals, and issues in real-time with collaborative features</p>
+            <div class="user-indicator">
+                <i class="fas fa-circle" style="color: #06d6a0;"></i>
+                <span id="username">张伟 (在线)</span>
+            </div>
+            <h1><i class="fas fa-chart-network"></i> 团队KPI与问题跟踪系统</h1>
+            <p class="subtitle">实时协作、数据同步、智能分析 - 助力团队高效协作</p>
         </header>
         
         <div class="stats-container">
             <div class="stat-card">
-                <i class="fas fa-bullseye fa-2x" style="color: #1a6dcc;"></i>
-                <div class="stat-value">12</div>
-                <div class="stat-label">Active KPIs</div>
+                <i class="fas fa-bullseye" style="color: var(--primary);"></i>
+                <div class="stat-value" id="kpi-count">7</div>
+                <div class="stat-label">活跃KPI指标</div>
                 <div class="progress-bar">
-                    <div class="progress" style="width: 75%"></div>
+                    <div class="progress" style="background-color: var(--primary); width: 75%"></div>
                 </div>
             </div>
             <div class="stat-card">
-                <i class="fas fa-tasks fa-2x" style="color: #28a745;"></i>
-                <div class="stat-value">24</div>
-                <div class="stat-label">Total Issues</div>
+                <i class="fas fa-tasks" style="color: var(--success);"></i>
+                <div class="stat-value" id="issue-count">18</div>
+                <div class="stat-label">跟踪中问题</div>
                 <div class="progress-bar">
-                    <div class="progress" style="width: 45%"></div>
+                    <div class="progress" style="background-color: var(--success); width: 45%"></div>
                 </div>
             </div>
             <div class="stat-card">
-                <i class="fas fa-users fa-2x" style="color: #ffc107;"></i>
-                <div class="stat-value">8</div>
-                <div class="stat-label">Team Members</div>
+                <i class="fas fa-users" style="color: var(--warning);"></i>
+                <div class="stat-value" id="member-count">9</div>
+                <div class="stat-label">团队成员</div>
                 <div class="progress-bar">
-                    <div class="progress" style="width: 60%"></div>
+                    <div class="progress" style="background-color: var(--warning); width: 60%"></div>
                 </div>
             </div>
             <div class="stat-card">
-                <i class="fas fa-check-circle fa-2x" style="color: #dc3545;"></i>
-                <div class="stat-value">83%</div>
-                <div class="stat-label">Completion Rate</div>
+                <i class="fas fa-check-circle" style="color: var(--danger);"></i>
+                <div class="stat-value" id="completion-rate">78%</div>
+                <div class="stat-label">整体完成率</div>
                 <div class="progress-bar">
-                    <div class="progress" style="width: 83%"></div>
+                    <div class="progress" style="background-color: var(--danger); width: 78%"></div>
                 </div>
             </div>
         </div>
@@ -408,9 +486,9 @@
         <div class="dashboard">
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="fas fa-bullseye"></i> KPI Goals & Progress</h2>
+                    <h2><i class="fas fa-bullseye"></i> KPI目标与进度</h2>
                     <button class="btn" onclick="addRow('kpi-table')">
-                        <i class="fas fa-plus"></i> Add KPI
+                        <i class="fas fa-plus"></i> 添加KPI
                     </button>
                 </div>
                 
@@ -418,37 +496,29 @@
                     <table id="kpi-table">
                         <thead>
                             <tr>
-                                <th>Core KPI</th>
-                                <th>Key Actions</th>
-                                <th>This Week Review</th>
-                                <th>Next Week Plan</th>
-                                <th>Owner</th>
-                                <th width="50">Action</th>
+                                <th>核心KPI</th>
+                                <th>关键行动</th>
+                                <th>本周回顾</th>
+                                <th>下周计划</th>
+                                <th>负责人</th>
+                                <th width="50">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><input placeholder="Customer satisfaction ≥ 90%"></td>
-                                <td><input placeholder="Improve response time"></td>
-                                <td><textarea>Conducted customer feedback survey</textarea></td>
-                                <td><textarea>Implement new support workflow</textarea></td>
-                                <td><input placeholder="Jack Zhang"></td>
+                                <td><input placeholder="客户满意度 ≥ 90%"></td>
+                                <td><input placeholder="改进响应时间"></td>
+                                <td><textarea>完成客户满意度调研，平均得分85%</textarea></td>
+                                <td><textarea>实施新的支持工作流程</textarea></td>
+                                <td><input value="张伟" class="owner-input"></td>
                                 <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                             <tr>
-                                <td><input placeholder="Reduce bug reports by 20%"></td>
-                                <td><input placeholder="Improve QA process"></td>
-                                <td><textarea>Implemented new testing protocol</textarea></td>
-                                <td><textarea>Train team on new QA tools</textarea></td>
-                                <td><input placeholder="Sarah Johnson"></td>
-                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
-                            </tr>
-                            <tr>
-                                <td><input placeholder="Increase feature delivery"></td>
-                                <td><input placeholder="Optimize dev workflow"></td>
-                                <td><textarea>Reduced meeting time by 30%</textarea></td>
-                                <td><textarea>Implement CI/CD pipeline</textarea></td>
-                                <td><input placeholder="Michael Chen"></td>
+                                <td><input placeholder="减少20%错误报告"></td>
+                                <td><input placeholder="改进QA流程"></td>
+                                <td><textarea>实施了新的测试协议</textarea></td>
+                                <td><textarea>培训团队使用新测试工具</textarea></td>
+                                <td><input value="李娜" class="owner-input"></td>
                                 <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                         </tbody>
@@ -458,9 +528,9 @@
             
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="fas fa-exclamation-circle"></i> Issue Tracking</h2>
+                    <h2><i class="fas fa-exclamation-circle"></i> 问题跟踪</h2>
                     <button class="btn" onclick="addRow('issue-table')">
-                        <i class="fas fa-plus"></i> Add Issue
+                        <i class="fas fa-plus"></i> 添加问题
                     </button>
                 </div>
                 
@@ -468,68 +538,54 @@
                     <table id="issue-table">
                         <thead>
                             <tr>
-                                <th>Issue Description</th>
-                                <th>Owner</th>
-                                <th>Status</th>
-                                <th>Completion Date</th>
-                                <th width="50">Action</th>
+                                <th>问题描述</th>
+                                <th>负责人</th>
+                                <th>状态</th>
+                                <th>截止日期</th>
+                                <th width="50">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><textarea>Login page fails on mobile devices</textarea></td>
-                                <td><input value="Alex Rivera"></td>
+                                <td><textarea>移动设备登录页面失败问题</textarea></td>
+                                <td><input value="王刚" class="owner-input"></td>
                                 <td>
                                     <select onchange="updateStatusBadge(this)">
-                                        <option>To Do</option>
-                                        <option selected>In Progress</option>
-                                        <option>Done</option>
+                                        <option>待处理</option>
+                                        <option selected>处理中</option>
+                                        <option>已完成</option>
                                     </select>
-                                    <div class="status-badge status-inprogress">In Progress</div>
+                                    <div class="status-badge status-inprogress">处理中</div>
                                 </td>
                                 <td><input type="date" value="2023-11-15"></td>
                                 <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                             <tr>
-                                <td><textarea>Database performance issues</textarea></td>
-                                <td><input value="Emma Wilson"></td>
+                                <td><textarea>数据库性能问题</textarea></td>
+                                <td><input value="赵敏" class="owner-input"></td>
                                 <td>
                                     <select onchange="updateStatusBadge(this)">
-                                        <option>To Do</option>
-                                        <option selected>In Progress</option>
-                                        <option>Done</option>
+                                        <option>待处理</option>
+                                        <option selected>处理中</option>
+                                        <option>已完成</option>
                                     </select>
-                                    <div class="status-badge status-inprogress">In Progress</div>
+                                    <div class="status-badge status-inprogress">处理中</div>
                                 </td>
                                 <td><input type="date" value="2023-11-20"></td>
                                 <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                             <tr>
-                                <td><textarea>User onboarding flow too complex</textarea></td>
-                                <td><input value="David Kim"></td>
+                                <td><textarea>用户引导流程过于复杂</textarea></td>
+                                <td><input value="陈明" class="owner-input"></td>
                                 <td>
                                     <select onchange="updateStatusBadge(this)">
-                                        <option selected>To Do</option>
-                                        <option>In Progress</option>
-                                        <option>Done</option>
+                                        <option selected>待处理</option>
+                                        <option>处理中</option>
+                                        <option>已完成</option>
                                     </select>
-                                    <div class="status-badge status-todo">To Do</div>
+                                    <div class="status-badge status-todo">待处理</div>
                                 </td>
                                 <td><input type="date" value="2023-12-01"></td>
-                                <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
-                            </tr>
-                            <tr>
-                                <td><textarea>Payment processing failure</textarea></td>
-                                <td><input value="Sophia Martinez"></td>
-                                <td>
-                                    <select onchange="updateStatusBadge(this)">
-                                        <option>To Do</option>
-                                        <option>In Progress</option>
-                                        <option selected>Done</option>
-                                    </select>
-                                    <div class="status-badge status-done">Done</div>
-                                </td>
-                                <td><input type="date" value="2023-11-10"></td>
                                 <td class="actions-cell"><button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                         </tbody>
@@ -540,10 +596,10 @@
         
         <div class="chart-container">
             <div class="card-header">
-                <h2><i class="fas fa-chart-bar"></i> Owner Completion Rate</h2>
+                <h2><i class="fas fa-chart-bar"></i> 负责人完成率分析</h2>
                 <div>
-                    <button class="btn btn-sm" onclick="updateChart()">
-                        <i class="fas fa-sync"></i> Refresh
+                    <button class="btn btn-sm btn-success" onclick="updateChart()">
+                        <i class="fas fa-sync"></i> 刷新数据
                     </button>
                 </div>
             </div>
@@ -552,36 +608,43 @@
     </div>
     
     <div class="notification" id="notification">
-        <i class="fas fa-check-circle"></i> Data saved successfully!
+        <i class="fas fa-check-circle"></i> 数据保存成功！
     </div>
     
     <div class="sync-indicator" id="sync-indicator">
-        <i class="fas fa-sync fa-spin"></i> Syncing data...
+        <i class="fas fa-sync fa-spin"></i> 正在同步数据...
     </div>
     
     <footer>
-        <p>Team KPI & Issue Tracker v2.0 | Real-time Collaborative Dashboard</p>
+        <p>团队KPI与问题跟踪系统 v2.0 | 实时协作仪表板 | © 2023 团队效率解决方案</p>
     </footer>
-    
+
     <script>
-        // Initialize Chart
+        // 初始化变量
+        let teamMembers = new Set(['张伟', '李娜', '王刚', '赵敏', '陈明']);
+        let issueCount = 3;
+        let kpiCount = 2;
+        let completionRate = 78;
+        
+        // 初始化图表
         const ctx = document.getElementById('progressChart').getContext('2d');
         const progressChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Jack Zhang', 'Sarah Johnson', 'Michael Chen', 'Alex Rivera', 'Emma Wilson'],
+                labels: ['张伟', '李娜', '王刚', '赵敏', '陈明'],
                 datasets: [{
-                    label: 'Completion Rate (%)',
-                    data: [75, 60, 90, 40, 85],
+                    label: '完成率 (%)',
+                    data: [65, 80, 45, 90, 30],
                     backgroundColor: [
-                        '#1a6dcc',
-                        '#28a745',
-                        '#ffc107',
-                        '#dc3545',
+                        '#4361ee',
+                        '#06d6a0',
+                        '#ffd166',
+                        '#ef476f',
                         '#6f42c1'
                     ],
                     borderWidth: 0,
-                    borderRadius: 5
+                    borderRadius: 8,
+                    borderSkipped: false,
                 }]
             },
             options: {
@@ -591,10 +654,22 @@
                         display: false
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
                         padding: 12,
                         cornerRadius: 6,
-                        displayColors: false
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `完成率: ${context.parsed.y}%`;
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '团队成员任务完成率',
+                        font: {
+                            size: 16
+                        }
                     }
                 },
                 scales: {
@@ -607,11 +682,19 @@
                         ticks: {
                             callback: value => value + '%',
                             stepSize: 20
+                        },
+                        title: {
+                            display: true,
+                            text: '完成百分比'
                         }
                     },
                     x: {
                         grid: {
                             display: false
+                        },
+                        title: {
+                            display: true,
+                            text: '团队成员'
                         }
                     }
                 },
@@ -622,61 +705,87 @@
             }
         });
         
-        // Update status badge
+        // 更新状态徽章
         function updateStatusBadge(selectElement) {
             const badge = selectElement.nextElementSibling;
             const status = selectElement.value;
-            badge.className = 'status-badge status-' + status.toLowerCase().replace(' ', '');
+            badge.className = 'status-badge status-' + (status === '待处理' ? 'todo' : 
+                status === '处理中' ? 'inprogress' : 'done');
             badge.textContent = status;
             
-            // Show notification
-            showNotification('Status updated successfully!');
+            // 更新统计数据
+            updateStats();
+            showNotification('状态更新成功！');
         }
         
-        // Add new row
+        // 添加新行
         function addRow(tableId) {
             const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
             const row = table.rows[0].cloneNode(true);
             
-            // Clear inputs
+            // 清空输入
             row.querySelectorAll('input, textarea').forEach(el => {
                 if (el.type !== 'button') el.value = '';
             });
             
-            // Reset status
+            // 重置状态
             const select = row.querySelector('select');
             if (select) {
                 select.selectedIndex = 0;
                 updateStatusBadge(select);
             }
             
+            // 添加到表格
             table.appendChild(row);
             
-            // Show notification
-            showNotification('New row added successfully!');
-        }
-        
-        // Delete row
-        function deleteRow(btn) {
-            const row = btn.parentNode.parentNode;
-            row.parentNode.removeChild(row);
+            // 更新计数
+            if (tableId === 'kpi-table') {
+                kpiCount++;
+                document.getElementById('kpi-count').textContent = kpiCount;
+            } else {
+                issueCount++;
+                document.getElementById('issue-count').textContent = issueCount;
+            }
             
-            // Show notification
-            showNotification('Row deleted successfully!');
+            showNotification('新行添加成功！');
         }
         
-        // Show notification
-        function showNotification(message) {
+        // 删除行
+        function deleteRow(btn) {
+            const row = btn.closest('tr');
+            const table = row.closest('table');
+            
+            if (table.querySelectorAll('tbody tr').length > 1) {
+                row.remove();
+                
+                // 更新计数
+                if (table.id === 'kpi-table') {
+                    kpiCount--;
+                    document.getElementById('kpi-count').textContent = kpiCount;
+                } else {
+                    issueCount--;
+                    document.getElementById('issue-count').textContent = issueCount;
+                }
+                
+                updateStats();
+                showNotification('行删除成功！');
+            } else {
+                showNotification('不能删除最后一行！', true);
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message, isError = false) {
             const notification = document.getElementById('notification');
-            notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            notification.classList.add('show');
+            notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}`;
+            notification.className = `notification ${isError ? 'error' : ''} show`;
             
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
         }
         
-        // Show sync indicator
+        // 显示同步指示器
         function showSyncIndicator() {
             const indicator = document.getElementById('sync-indicator');
             indicator.classList.add('show');
@@ -686,55 +795,96 @@
             }, 2000);
         }
         
-        // Simulate periodic sync
-        setInterval(() => {
-            showSyncIndicator();
-        }, 10000);
-        
-        // Initialize status badges
-        document.querySelectorAll('select').forEach(select => {
-            if (select.nextElementSibling && select.nextElementSibling.classList.contains('status-badge')) {
-                updateStatusBadge(select);
-            }
-        });
-        
-        // Add some interactivity to inputs
-        document.querySelectorAll('input, textarea, select').forEach(el => {
-            el.addEventListener('focus', function() {
-                this.parentNode.style.backgroundColor = '#f8fbff';
-            });
-            
-            el.addEventListener('blur', function() {
-                this.parentNode.style.backgroundColor = '';
-            });
-        });
-        
-        // Update chart button
+        // 更新图表数据
         function updateChart() {
-            // Simulate data update
-            progressChart.data.datasets[0].data = progressChart.data.datasets[0].data.map(
-                () => Math.floor(Math.random() * 40) + 60
-            );
+            // 获取所有负责人
+            const owners = Array.from(teamMembers);
+            const completionRates = owners.map(() => Math.floor(Math.random() * 30) + 60);
+            
+            // 更新图表
+            progressChart.data.labels = owners;
+            progressChart.data.datasets[0].data = completionRates;
             progressChart.update();
             
-            showNotification('Chart updated with latest data!');
+            // 更新完成率
+            const avgRate = Math.round(completionRates.reduce((a, b) => a + b, 0) / completionRates.length);
+            document.getElementById('completion-rate').textContent = `${avgRate}%`;
+            completionRate = avgRate;
+            
+            showNotification('图表已更新最新数据！');
+            showSyncIndicator();
         }
         
-        // Simulate real-time collaboration
-        setInterval(() => {
-            // Randomly update a KPI
-            const kpiInputs = document.querySelectorAll('#kpi-table input');
-            if (kpiInputs.length > 0) {
-                const randomInput = kpiInputs[Math.floor(Math.random() * kpiInputs.length)];
-                if (Math.random() > 0.7) {
-                    randomInput.value = randomInput.value + (Math.random() > 0.5 ? '✓' : '⭐');
-                    randomInput.parentNode.style.backgroundColor = '#e8f4ff';
-                    setTimeout(() => {
-                        randomInput.parentNode.style.backgroundColor = '';
-                    }, 1000);
+        // 更新统计数据
+        function updateStats() {
+            // 更新成员数
+            document.getElementById('member-count').textContent = teamMembers.size;
+            
+            // 计算新的完成率
+            const newRate = Math.min(100, Math.max(0, completionRate + (Math.random() > 0.5 ? 2 : -1)));
+            document.getElementById('completion-rate').textContent = `${newRate}%`;
+            completionRate = newRate;
+        }
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化状态徽章
+            document.querySelectorAll('select').forEach(select => {
+                if (select.nextElementSibling && select.nextElementSibling.classList.contains('status-badge')) {
+                    updateStatusBadge(select);
                 }
-            }
-        }, 5000);
+            });
+            
+            // 添加输入交互效果
+            document.querySelectorAll('input, textarea, select').forEach(el => {
+                el.addEventListener('focus', function() {
+                    this.parentNode.style.backgroundColor = '#f0f7ff';
+                });
+                
+                el.addEventListener('blur', function() {
+                    this.parentNode.style.backgroundColor = '';
+                });
+            });
+            
+            // 初始化统计数据
+            document.getElementById('kpi-count').textContent = kpiCount;
+            document.getElementById('issue-count').textContent = issueCount;
+            document.getElementById('member-count').textContent = teamMembers.size;
+            document.getElementById('completion-rate').textContent = `${completionRate}%`;
+            
+            // 添加负责人时更新集合
+            document.querySelectorAll('.owner-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    if (this.value && !teamMembers.has(this.value)) {
+                        teamMembers.add(this.value);
+                        updateStats();
+                    }
+                });
+            });
+            
+            // 模拟实时协作
+            setInterval(() => {
+                // 随机更新数据
+                if (Math.random() > 0.7) {
+                    const randomInput = document.querySelectorAll('input, textarea')[Math.floor(Math.random() * 10)];
+                    if (randomInput && randomInput.value) {
+                        randomInput.value = randomInput.value + (Math.random() > 0.5 ? '✓' : '');
+                        showSyncIndicator();
+                    }
+                }
+                
+                // 随机添加成员
+                if (Math.random() > 0.9) {
+                    const newMembers = ['刘芳', '杨阳', '周涛', '吴静', '郑强'];
+                    const newMember = newMembers[Math.floor(Math.random() * newMembers.length)];
+                    if (!teamMembers.has(newMember)) {
+                        teamMembers.add(newMember);
+                        updateStats();
+                        showNotification(`${newMember} 加入了团队！`);
+                    }
+                }
+            }, 5000);
+        });
     </script>
 </body>
 </html>
